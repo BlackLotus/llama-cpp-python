@@ -275,6 +275,7 @@ class Llama:
         repeat_penalty: float = 1.1,
         top_k: int = 40,
         stream: bool = False,
+        interactive: bool = False,
     ) -> Union[
         Generator[Completion, None, None],
         Generator[CompletionChunk, None, None],
@@ -299,13 +300,23 @@ class Llama:
             stop_sequences = []
 
         finish_reason = None
-        for token in self.generate(
+        if interactive:
+            self._session = self.generate(
+            prompt_tokens,
+            top_k=top_k,
+            top_p=top_p,
+            temp=temperature,
+            repeat_penalty=repeat_penalty,)
+            session = self._session
+        else:
+            session = self.generate(
             prompt_tokens,
             top_k=top_k,
             top_p=top_p,
             temp=temperature,
             repeat_penalty=repeat_penalty,
-        ):
+        )
+        for token in session:
             if token == llama_cpp.llama_token_eos():
                 text = self.detokenize(completion_tokens)
                 finish_reason = "stop"
